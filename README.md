@@ -74,12 +74,12 @@ The **Barangay Disaster Risk Management System** is a simple yet efficient web a
 7. Start the application:
    - Backend:
      ```bash
-     cd backend
+     cd server
      npm start
      ```
    - Frontend:
      ```bash
-     cd frontend
+     cd client
      npm start
      ```
 
