@@ -15,15 +15,10 @@ The **Barangay Disaster Risk Management System** is a simple yet efficient web a
 - **Reports:**
   - Generate printable reports of incidents and affected families for barangay meetings or relief coordination.
 
-- **Security:**
-  - Role-based access for barangay officials to ensure data security.
-  - Secure user authentication.
-
 ## Technologies Used
 - **Frontend:** React.js with Material-UI for a simple and intuitive user interface.
 - **Backend:** Node.js with Express.js for API handling.
 - **Database:** MySQL (using XAMPP) for structured data storage.
-- **Authentication:** JSON Web Tokens (JWT) for secure login.
 
 ## Installation
 
@@ -63,12 +58,11 @@ The **Barangay Disaster Risk Management System** is a simple yet efficient web a
    - Create a `.env` file in the `backend` directory.
    - Add the following:
      ```env
-     PORT=5000
-     DB_HOST=localhost
-     DB_USER=root
-     DB_PASSWORD=your_mysql_password
-     DB_NAME=drms_database
-     JWT_SECRET=your_jwt_secret
+     Port=7777
+     HOST='localhost'
+     USER='root'
+     PASSWORD=''
+     DATABASE='drms_database'
      ```
 
 7. Start the application:
