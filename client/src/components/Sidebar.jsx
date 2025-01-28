@@ -20,6 +20,7 @@ import { FaUpload } from "react-icons/fa";
 import InfoIcon from "@mui/icons-material/Info";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
 import { IoPeople } from "react-icons/io5";
+import { MdDisplaySettings } from "react-icons/md";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { IconButton, InputAdornment } from "@mui/material";
@@ -38,8 +39,6 @@ const Sidebar = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
-  const [profileImage, setProfileImage] = useState(null);
-  const image = localStorage.getItem("profilePicture");
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const [profile, setProfile] = useState({
     name: "",
@@ -59,15 +58,15 @@ const Sidebar = () => {
   };
 
   const handleProfileClick = async () => {
-    const id = localStorage.getItem("id");
+    const id = localStorage.getItem("id"); // User ID stored in localStorage
     try {
-      const response = await axios.get(`${config.URL}/users/${id}`);
+      const response = await axios.get(`${config.URL}/users/${id}`); // Fetch user by ID
       const profileData = response.data;
       setProfile({
         ...profileData,
       });
       console.log("profileData:", profileData);
-      setOpen(true);
+      setOpen(true); // Open profile dialog
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
@@ -103,10 +102,24 @@ const Sidebar = () => {
   }, [imagePreview]);
 
   useEffect(() => {
-    const imageUrl = `http://127.0.0.1:7777/assets/profiles/${image}`;
-    setProfileImage(imageUrl);
-    console.log("image:", image);
-  }, [image]);
+    const fetchUserProfile = async () => {
+      const id = localStorage.getItem("id"); // User ID stored in localStorage
+      try {
+        const response = await axios.get(`${config.URL}/users/${id}`); // Fetch user by ID
+        const profileData = response.data;
+        setProfile({
+          ...profileData,
+        });
+        console.log("profileData:", profileData);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchUserProfile(); // Call the async function when the component mounts
+  }, []); // Empty dependency array to run only once on mount
+
+  // Empty dependency array to run only once on mount
 
   const handleClose = () => {
     setOpen(false);
@@ -167,8 +180,6 @@ const Sidebar = () => {
     }
   };
 
-  const userName = localStorage.getItem("name");
-
   return (
     <Box
       sx={{
@@ -196,13 +207,18 @@ const Sidebar = () => {
         sx={{ cursor: "pointer" }}
       >
         <Avatar
-          src={imagePreview || profileImage}
+          src={
+            imagePreview ||
+            (profile.profile_picture
+              ? `data:image/jpeg;base64,${profile.profile_picture}` // If profile_picture is Base64
+              : null)
+          }
           sx={{ width: 100, height: 100, mb: 2 }}
           alt={profile.name || "Profile picture"}
         >
           {!imagePreview && !profile.profile_picture && profile.name?.[0]}
         </Avatar>
-        <Typography variant="h6">{userName}</Typography>
+        <Typography variant="h6">{profile.name}</Typography>
       </Box>
 
       {/* Profile Dialog */}
@@ -229,7 +245,7 @@ const Sidebar = () => {
               src={
                 imagePreview ||
                 (profile.profile_picture
-                  ? `${config.URL}/assets/profiles/${profile.profile_picture}`
+                  ? `data:image/jpeg;base64,${profile.profile_picture}`
                   : null)
               }
               sx={{ width: 100, height: 100, mb: 2 }}
@@ -496,6 +512,11 @@ const Sidebar = () => {
                   path: "/users",
                 },
                 {
+                  text: "Setups",
+                  icon: <MdDisplaySettings />,
+                  path: "/setups",
+                },
+                {
                   text: "About Us",
                   icon: <InfoIcon />,
                   path: "/about-us",
@@ -549,7 +570,6 @@ const Sidebar = () => {
           )}
         </List>
       </Box>
-      
 
       {/* Fixed logout button at the bottom */}
       <Box>

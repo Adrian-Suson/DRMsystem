@@ -197,7 +197,7 @@ router.get(
     `);
 
     // Combine the results by matching the purok and adding the counts
-    const population = familyData.map((familyRow) => {
+    const population = familyData.map((familyRow) => { 
       const familyMembers = memberData.find(
         (memberRow) => memberRow.purok === familyRow.purok
       ) || { male_family_member: 0, female_family_member: 0 };

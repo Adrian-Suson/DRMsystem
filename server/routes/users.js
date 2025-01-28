@@ -1,10 +1,14 @@
 import express from "express";
 import asyncHandler from "../middleware/asyncHandler.js";
 import db from "../db.js";
-import upload from '../config/multerConfig.js';
+import multer from "multer";
 
 const router = express.Router();
 
+// Configure Multer to handle file uploads
+const upload = multer({ storage: multer.memoryStorage() }); // Store files in memory
+
+// Endpoint to add a new user
 router.post(
   "/users",
   upload.single("profile_picture"),
@@ -13,11 +17,8 @@ router.post(
     let profile_picture = null;
 
     if (req.file) {
-      profile_picture = req.file.filename;
+      profile_picture = req.file.buffer; // Binary data of the uploaded file
     }
-
-    console.log('File:', req.file); // Debug logging
-    console.log('Body:', req.body); // Debug logging
 
     try {
       const [result] = await db.query(
@@ -29,8 +30,8 @@ router.post(
         id: result.insertId,
         username,
         name,
-        profile_picture,
-        role
+        role,
+        profile_picture: profile_picture ? "Uploaded" : null,
       });
     } catch (error) {
       console.error("Error adding user:", error);
@@ -44,7 +45,10 @@ router.get(
   "/users",
   asyncHandler(async (req, res) => {
     try {
-      const [users] = await db.query("SELECT * FROM users");
+      const [users] = await db.query(
+        "SELECT id, username, name, role FROM users"
+      );
+
       res.status(200).json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -59,11 +63,14 @@ router.put(
   upload.single("profile_picture"),
   asyncHandler(async (req, res) => {
     const userId = req.params.id;
-    const updates = { ...req.body };
+    const { username, password, name, role } = req.body;
 
-    if (req.file) {
-      updates.profile_picture = req.file.filename;
-    }
+    const updates = {};
+    if (username) updates.username = username;
+    if (password) updates.password = password;
+    if (name) updates.name = name;
+    if (role) updates.role = role;
+    if (req.file) updates.profile_picture = req.file.buffer;
 
     const setClause = Object.keys(updates)
       .map((key) => `${key} = ?`)
@@ -80,10 +87,7 @@ router.put(
         return res.status(404).json({ message: "User not found." });
       }
 
-      res.status(200).json({
-        message: "User updated successfully",
-        profile_picture: req.file ? req.file.filename : undefined,
-      });
+      res.status(200).json({ message: "User updated successfully." });
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -129,11 +133,20 @@ router.get(
         return res.status(404).json({ message: "User not found." });
       }
 
-      res.status(200).json(rows[0]);
+      const user = rows[0];
+      // Convert profile_picture (BLOB) to Base64
+      const profilePictureBase64 = user.profile_picture
+        ? user.profile_picture.toString("base64")
+        : null;
+
+      res.status(200).json({
+        ...user,
+        profile_picture: profilePictureBase64, // Send Base64 string
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Internal server error" });
-    }
+    } 
   })
 );
 
@@ -143,7 +156,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
-    // Validate required fields
     if (!username || !password) {
       return res
         .status(400)
@@ -151,7 +163,6 @@ router.post(
     }
 
     try {
-      // Check if the user exists and the password matches
       const [rows] = await db.query(
         "SELECT * FROM users WHERE username = ? AND password = ?",
         [username, password]
@@ -161,8 +172,16 @@ router.post(
         return res.status(401).json({ message: "Invalid credentials." });
       }
 
-      // Respond with the user data
-      res.status(200).json(rows[0]);
+      const user = rows[0];
+      // Convert profile_picture (BLOB) to Base64
+      const profilePictureBase64 = user.profile_picture
+        ? user.profile_picture.toString("base64")
+        : null;
+
+      res.status(200).json({
+        ...user,
+        profile_picture: profilePictureBase64, // Include Base64 string
+      });
     } catch (error) {
       console.error("Error logging in user:", error);
       res.status(500).json({ message: "Internal server error" });

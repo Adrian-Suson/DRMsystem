@@ -10,6 +10,7 @@ import Dashboard from "scenes/dashboard/dashboard";
 import AffectedFamilies from "scenes/AffectedFamilies/AffectedFamilies";
 import DisasterIncidents from "scenes/DisasterIncidents/DisasterIncidents";
 import Users from "scenes/users/users";
+import Setups from "scenes/Setups/Setups";
 function App() {
 
   // Example state to manage the dialog visibility
@@ -39,6 +40,8 @@ function App() {
                   element={<TotalAffectedChart />}
                 />
                 <Route path="/users" element={<Users />} />
+                <Route path="/setups" element={<Setups />} />
+
                 <Route path="/about-us" element={<AboutUs />} />
               </Route>
             </Routes>

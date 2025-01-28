@@ -1,23 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   TextField,
   Typography,
   Container,
-  useTheme,
   Box,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import logo from "assets/Picture2.jpeg";
-import backgroundImage from "assets/img1.png"; // Update the path to your background image
 import axios from "axios";
 
 const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
+  const [systemTitle, setSystemTitle] = useState(""); // Dynamic system title
+  const [logo, setLogo] = useState(""); // Dynamic logo (Base64)
   const navigate = useNavigate();
-  const theme = useTheme();
+
+  // Fetch dynamic logo and title on mount
+  useEffect(() => {
+    const fetchLogoAndTitle = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:7777/logos/1" // Replace `1` with the appropriate VersionID
+        );
+
+        const { TitleText, LogoBlob } = response.data;
+        setSystemTitle(TitleText);
+        setLogo(LogoBlob ? `data:image/png;base64,${LogoBlob}` : ""); // Convert Base64 to usable image
+      } catch (error) {
+        console.error("Error fetching logo and title:", error.message);
+      }
+    };
+
+    fetchLogoAndTitle();
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,7 +49,7 @@ const LoginForm = () => {
         // Successful login
         console.log("Login successful!");
         setLoginError(false); // Reset login error state
-        // Save name in localStorage
+        // Save user data in localStorage
         localStorage.setItem("name", response.data.name);
         localStorage.setItem("id", response.data.id);
         localStorage.setItem("role", response.data.role);
@@ -40,8 +57,6 @@ const LoginForm = () => {
           "profilePicture",
           response.data.profile_picture
         );
-        // Log the name of the logged-in user
-        console.log("Name:", response.data);
         // Redirect to the dashboard
         navigate("/dashboard");
       } else {
@@ -49,15 +64,12 @@ const LoginForm = () => {
         setLoginError(true);
       }
     } catch (error) {
-      // Failed login
+      // Handle login error
       if (error.response) {
-        // Server responded with a status other than 200 range
         console.error("Login failed with response error:", error.response.data);
       } else if (error.request) {
-        // Request was made but no response received
         console.error("Login failed with no response:", error.request);
       } else {
-        // Something else happened
         console.error("Login failed with error:", error.message);
       }
       setLoginError(true);
@@ -67,10 +79,6 @@ const LoginForm = () => {
   return (
     <Box
       sx={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
         width: "100vw",
         height: "100vh",
         display: "flex",
@@ -79,6 +87,7 @@ const LoginForm = () => {
         alignItems: "center",
       }}
     >
+      {/* Dynamic Title */}
       <Box
         sx={{
           mb: 3,
@@ -89,7 +98,7 @@ const LoginForm = () => {
           textAlign: "center",
         }}
       >
-        Barangay Recodo Disaster Risk Record Management System
+        {systemTitle || "Loading..."} {/* Fallback while fetching */}
       </Box>
 
       <Container
@@ -106,24 +115,18 @@ const LoginForm = () => {
           p: 4,
         }}
       >
-        <Box
-          component="img"
-          src={logo}
-          borderRadius="1rem"
-          width="100px"
-          height="100px"
-        />
-        <Typography
-          component="h1"
-          variant="h5"
-          sx={{
-            mb: 3,
-            fontSize: "2rem",
-            fontWeight: "700",
-            "&:hover": { color: theme.palette.grey[100] }, // Hover effect
-          }}
-        ></Typography>
-        <Typography component="h1" variant="h5">
+        {/* Dynamic Logo */}
+        {logo && (
+          <Box
+            component="img"
+            src={logo} // Dynamic logo from Base64
+            borderRadius="1rem"
+            width="100px"
+            height="100px"
+          />
+        )}
+
+        <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: "700" }}>
           Log In
         </Typography>
         <form onSubmit={handleLogin} noValidate sx={{ width: "100%" }}>

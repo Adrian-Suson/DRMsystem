@@ -1,14 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import logo from "assets/logos.jpg";
-import logo2 from "assets/Picture2.jpeg";
 import { Box, Grid, CssBaseline, Container } from "@mui/material";
+import logo from "assets/logos.jpg";
 import Sidebar from "components/Sidebar";
 import { Outlet } from "react-router-dom";
+import axios from "axios";
 
 const Layout = () => {
+  // State for dynamic data
+  const [dynamicTitle, setDynamicTitle] = useState("Loading...");
+  const [rightLogo, setRightLogo] = useState(null);
+
+  // Fetch the dynamic title and logo
+  useEffect(() => {
+    const fetchDynamicData = async () => {
+      try {
+        const response = await axios.get("http://localhost:7777/logos/1"); // Replace with your API endpoint
+        if (response.data) {
+          setDynamicTitle(response.data.TitleText || "Default Title"); // Fallback title
+          setRightLogo(response.data.LogoBlob); // Base64 logo
+        }
+      } catch (error) {
+        console.error("Error fetching dynamic data:", error);
+      }
+    };
+
+    fetchDynamicData();
+  }, []);
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", flexDirection: "column" }}>
       <CssBaseline />
@@ -19,12 +40,10 @@ const Layout = () => {
         sx={{
           backgroundColor: "#FFFFFF",
           padding: "8px 16px",
-          borderRadius: "0px", // Remove border radius
+          borderRadius: "0px",
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between", minHeight: "60px" }}>
-          {" "}
-          {/* Adjusted height */}
           <Grid container alignItems="center">
             {/* Left Logo */}
             <Grid item>
@@ -36,30 +55,33 @@ const Layout = () => {
               >
                 <Box
                   component="img"
-                  src={logo}
-                  width="50px" // Further reduced logo size for balance
+                  src={logo} // Static left logo
+                  width="50px"
                   height="50px"
                   sx={{ borderRadius: "50%" }}
                 />
               </Box>
             </Grid>
 
-            {/* Title */}
+            {/* Dynamic Title */}
             <Grid item xs>
               <Typography
-                variant="h6" // Font size maintained
+                variant="h6"
                 sx={{
                   color: "#333",
                   fontWeight: "bold",
                   textAlign: "center",
-                  fontSize: { xs: "1.2rem", md: "1.5rem" }, // Responsive font size
+                  fontSize: { xs: "1rem", sm: "1.2rem", md: "1.5rem" }, // Adjusted size for responsiveness
+                  whiteSpace: "nowrap", // Prevents wrapping
+                  overflow: "hidden", // Ensures overflow text doesn't display outside the container
+                  textOverflow: "ellipsis", // Adds an ellipsis to long text
                 }}
               >
-                Brgy. Recodo Disaster Management
+                {dynamicTitle} {/* Dynamic title */}
               </Typography>
             </Grid>
 
-            {/* Right Logo */}
+            {/* Dynamic Right Logo */}
             <Grid item>
               <Box
                 display="flex"
@@ -67,13 +89,19 @@ const Layout = () => {
                 borderRadius="50%"
                 overflow="hidden"
               >
-                <Box
-                  component="img"
-                  src={logo2}
-                  width="50px" // Further reduced logo size
-                  height="50px"
-                  sx={{ borderRadius: "50%" }}
-                />
+                {rightLogo ? (
+                  <Box
+                    component="img"
+                    src={`data:image/png;base64,${rightLogo}`} // Dynamic right logo
+                    width="50px"
+                    height="50px"
+                    sx={{ borderRadius: "50%" }}
+                  />
+                ) : (
+                  <Typography variant="body2" color="textSecondary">
+                    Loading...
+                  </Typography>
+                )}
               </Box>
             </Grid>
           </Grid>
@@ -92,17 +120,16 @@ const Layout = () => {
 
         {/* Main Content */}
         <Box sx={{ flexGrow: 1, padding: "16px" }}>
-          {/* Reduced padding */}
           <Container
             sx={{
               mt: 2,
               backgroundColor: "#DDDDDDFF",
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-              padding: "16px", // Added padding for content
+              padding: "16px",
             }}
           >
-            <Outlet /> {/* This will render the rest of the content */}
+            <Outlet />
           </Container>
         </Box>
       </Box>

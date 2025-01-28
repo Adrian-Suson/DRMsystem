@@ -25,6 +25,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DisasterTable from "./DisasterTable";
 import { logActivity } from "services/activityLogService";
+import rightLogo from "assets/logos.jpg";
 
 const DisasterIncidents = () => {
   const [disasters, setDisasters] = useState([]);
@@ -147,7 +148,19 @@ const DisasterIncidents = () => {
          Total Females: ${selectedDisaster.totalFemaleMembers}`
       );
 
+      // Fetch the dynamic title and logo (replace with your actual API endpoint)
+      const response = await fetch("http://localhost:7777/logos"); // Get logos and title
+      const logoData = await response.json();
+
+      // Assuming the response contains the dynamic title and logo
+      const dynamicTitle = logoData[0]?.TitleText || "Default Title"; // Fallback to default title
+      const logo = logoData[0]?.LogoBlob || ""; // Base64-encoded logo
+
+      // Static right logo (replace with actual static image path or Base64 string)
+
       const printWindow = window.open("", "_blank");
+
+      // HTML content with dynamic title and logos (static right logo)
       printWindow.document.write(`
       <html>
         <head>
@@ -155,13 +168,25 @@ const DisasterIncidents = () => {
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { text-align: center; }
+            h2 { text-align: center; }
+            h3 { margin-top: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
             th { background-color: #f2f2f2; }
+            .header { display: flex; justify-content: space-between; align-items: center; }
+            .header img { width: 100px; height: auto; }
+            .header div { text-align: center; }
           </style>
         </head>
         <body>
-          <h1>Disaster Details</h1>
+          <div class="header">
+            <img src="data:image/png;base64,${logo}" alt="Logo" />  <!-- Dynamic logo -->
+            <div>
+              <h2>${dynamicTitle}</h2>  <!-- Dynamic title -->
+              <h2>Disaster Details</h2>
+            </div>
+            <img src="${rightLogo}" alt="Right Logo" />  <!-- Static right logo -->
+          </div>
           <h2>${selectedDisaster.disasterType} on ${formatDate(
         selectedDisaster.disasterDate
       )}</h2>
@@ -180,11 +205,11 @@ const DisasterIncidents = () => {
             ${Object.entries(selectedDisaster.summary)
               .map(
                 ([key, value]) => `
-                <tr>
-                  <td>${key}</td>
-                  <td>${value.males}</td>
-                  <td>${value.females}</td>
-                </tr>`
+            <tr>
+              <td>${key}</td>
+              <td>${value.males}</td>
+              <td>${value.females}</td>
+            </tr>`
               )
               .join("")}
           </table>
@@ -216,26 +241,24 @@ const DisasterIncidents = () => {
                 <td>${family.status}</td>
                 <td>${family.phone}</td>
                 <td>${family.purok || "N/A"}</td>
-                <td>
-                  ${family.residencyType} 
-                  ${
-                    family.residencyType === "Boarder" &&
-                    ` (${family.ownerName})`
-                  }
-                </td>
+                <td>${family.residencyType} ${
+                family.residencyType === "Boarder"
+                  ? `(${family.ownerName})`
+                  : ""
+              }</td>
               </tr>
               <tr><td colspan="7"><strong>Members:</strong></td></tr>
               ${family.members
                 .map(
                   (member) => `
-              <tr>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Birth Date</th>
-                <th>Status</th>
-                <th>Phone</th>
-              </tr>
+                <tr>
+                  <th>Name</th>
+                  <th>Age</th>
+                  <th>Gender</th>
+                  <th>Birth Date</th>
+                  <th>Status</th>
+                  <th>Phone</th>
+                </tr>
                 <tr>
                   <td>${member.name}</td>
                   <td>${member.age}</td>
@@ -247,19 +270,29 @@ const DisasterIncidents = () => {
                   }).format(new Date(member.birthDate))}</td>
                   <td>${member.status}</td>
                   <td>${member.phone}</td>
-                </tr>
-              `
+                </tr>`
                 )
                 .join("")}
-            </table>
-          `
+            </table>`
             )
             .join("")}
         </body>
       </html>
-    `);
-      printWindow.document.close();
-      printWindow.print();
+      `);
+
+      // Wait for images to load before printing
+      const images = printWindow.document.querySelectorAll("img");
+      let loadedImagesCount = 0;
+      images.forEach((img) => {
+        img.onload = () => {
+          loadedImagesCount += 1;
+          if (loadedImagesCount === images.length) {
+            // Trigger print when all images are loaded
+            printWindow.document.close();
+            printWindow.print();
+          }
+        };
+      });
     } catch (error) {
       console.error("Error logging print activity:", error);
       toast.error("Error generating report");
