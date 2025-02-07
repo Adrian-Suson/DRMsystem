@@ -5,6 +5,7 @@ import {
   Typography,
   Container,
   Box,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -12,32 +13,40 @@ import axios from "axios";
 const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState(false);
-  const [systemTitle, setSystemTitle] = useState(""); // Dynamic system title
-  const [logo, setLogo] = useState(""); // Dynamic logo (Base64)
+  const [loginError, setLoginError] = useState(null);
+  const [systemTitle, setSystemTitle] = useState("");
+  const [logo, setLogo] = useState("");
+  const [loginBackground, setLoginBackground] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch dynamic logo and title on mount
+  // Fetch dynamic logo, title, and background on mount
   useEffect(() => {
-    const fetchLogoAndTitle = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:7777/logos/1" // Replace `1` with the appropriate VersionID
+        const response = await axios.get("http://localhost:7777/logos/1");
+
+        const { TitleText, Logo, LoginBackground } = response.data;
+        console.log(response.data);
+        setSystemTitle(TitleText);
+        setLogo(Logo ? `data:image/png;base64,${Logo}` : "");
+        setLoginBackground(
+          LoginBackground ? `data:image/png;base64,${LoginBackground}` : ""
         );
 
-        const { TitleText, LogoBlob } = response.data;
-        setSystemTitle(TitleText);
-        setLogo(LogoBlob ? `data:image/png;base64,${LogoBlob}` : ""); // Convert Base64 to usable image
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching logo and title:", error.message);
+        console.error("Error fetching login page assets:", error.message);
+        setLoading(false);
       }
     };
 
-    fetchLogoAndTitle();
+    fetchData();
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoginError(null);
 
     try {
       const response = await axios.post("http://localhost:7777/users/login", {
@@ -46,33 +55,20 @@ const LoginForm = () => {
       });
 
       if (response.status === 200) {
-        // Successful login
-        console.log("Login successful!");
-        setLoginError(false); // Reset login error state
-        // Save user data in localStorage
         localStorage.setItem("name", response.data.name);
         localStorage.setItem("id", response.data.id);
         localStorage.setItem("role", response.data.role);
-        localStorage.setItem(
-          "profilePicture",
-          response.data.profile_picture
-        );
-        // Redirect to the dashboard
+        localStorage.setItem("profilePicture", response.data.profile_picture);
         navigate("/dashboard");
-      } else {
-        console.error("Login failed with status:", response.status);
-        setLoginError(true);
       }
     } catch (error) {
-      // Handle login error
       if (error.response) {
-        console.error("Login failed with response error:", error.response.data);
-      } else if (error.request) {
-        console.error("Login failed with no response:", error.request);
+        setLoginError(
+          error.response.data.message || "Invalid username or password."
+        );
       } else {
-        console.error("Login failed with error:", error.message);
+        setLoginError("Failed to connect to the server. Please try again.");
       }
-      setLoginError(true);
     }
   };
 
@@ -85,21 +81,28 @@ const LoginForm = () => {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
+        backgroundImage: loginBackground ? `url(${loginBackground})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
       {/* Dynamic Title */}
-      <Box
+      <Typography
+        variant="h4"
         sx={{
           mb: 3,
-          fontSize: "2rem",
-          fontWeight: "700",
-          color: "black",
-          "&:hover": { color: "grey" },
+          fontWeight: "bold",
+          color: "white",
+          textShadow: "2px 2px 4px rgba(0,0,0,0.6)",
           textAlign: "center",
         }}
       >
-        {systemTitle || "Loading..."} {/* Fallback while fetching */}
-      </Box>
+        {loading ? (
+          <CircularProgress color="inherit" size={24} />
+        ) : (
+          systemTitle || "Loading..."
+        )}
+      </Typography>
 
       <Container
         component="main"
@@ -109,26 +112,40 @@ const LoginForm = () => {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          bgcolor: "rgba(255, 255, 255, 0.8)", // Semi-transparent background
-          borderRadius: "8px",
+          bgcolor: "rgba(255, 255, 255, 0.85)",
+          borderRadius: "12px",
           boxShadow: 3,
           p: 4,
+          backdropFilter: "blur(10px)", // Blurred background for a glass effect
         }}
       >
         {/* Dynamic Logo */}
-        {logo && (
+        {logo ? (
           <Box
             component="img"
-            src={logo} // Dynamic logo from Base64
-            borderRadius="1rem"
-            width="100px"
-            height="100px"
+            src={logo}
+            alt="System Logo"
+            sx={{
+              borderRadius: "8px",
+              width: "100px",
+              height: "100px",
+              mb: 2,
+            }}
           />
+        ) : (
+          <Typography variant="h6" sx={{ color: "white", mb: 2 }}>
+            Logo not available
+          </Typography>
         )}
 
-        <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: "700" }}>
+        <Typography
+          component="h1"
+          variant="h5"
+          sx={{ mb: 3, fontWeight: "700" }}
+        >
           Log In
         </Typography>
+
         <form onSubmit={handleLogin} noValidate sx={{ width: "100%" }}>
           <TextField
             margin="normal"
@@ -154,10 +171,11 @@ const LoginForm = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+
           <Box
             sx={{
               display: "flex",
-              justifyContent: "center", // Center the button horizontally
+              justifyContent: "center",
               mt: 3,
             }}
           >
@@ -165,20 +183,22 @@ const LoginForm = () => {
               type="submit"
               variant="contained"
               sx={{
-                backgroundColor: "#0059FF", // Light blue color
-                padding: "8px 24px", // Adjust padding to make the button smaller
-                fontSize: "0.875rem", // Adjust font size for a modern look
-                borderRadius: "8px", // Rounded corners for a modern look
-                textTransform: "none", // Remove uppercase transformation
-                "&:hover": { backgroundColor: "#87CEEB" }, // Slightly darker blue on hover
+                backgroundColor: "#0059FF",
+                padding: "10px 30px",
+                fontSize: "1rem",
+                borderRadius: "10px",
+                textTransform: "none",
+                "&:hover": { backgroundColor: "#87CEEB" },
               }}
             >
               Log In
             </Button>
           </Box>
+
+          {/* Display login error message */}
           {loginError && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              Incorrect username or password. Please try again.
+            <Typography color="error" sx={{ mt: 2, textAlign: "center" }}>
+              {loginError}
             </Typography>
           )}
         </form>

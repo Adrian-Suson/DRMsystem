@@ -20,7 +20,7 @@ const Layout = () => {
         const response = await axios.get("http://localhost:7777/logos/1"); // Replace with your API endpoint
         if (response.data) {
           setDynamicTitle(response.data.TitleText || "Default Title"); // Fallback title
-          setRightLogo(response.data.LogoBlob); // Base64 logo
+          setRightLogo(response.data.Logo); // Base64 logo
         }
       } catch (error) {
         console.error("Error fetching dynamic data:", error);

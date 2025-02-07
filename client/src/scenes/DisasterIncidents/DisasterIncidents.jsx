@@ -136,165 +136,161 @@ const DisasterIncidents = () => {
     if (!selectedDisaster) return;
 
     try {
-      // Log print activity
       await logActivity(
         "PRINT_DISASTER_REPORT",
         `Generated report for disaster: ${selectedDisaster.disasterType} (ID: ${
           selectedDisaster.id
-        }) 
+        })
          Date: ${formatDate(selectedDisaster.disasterDate)}
          Affected Families: ${selectedDisaster.affectedFamilies.length}
          Total Males: ${selectedDisaster.totalMaleMembers}
          Total Females: ${selectedDisaster.totalFemaleMembers}`
       );
 
-      // Fetch the dynamic title and logo (replace with your actual API endpoint)
-      const response = await fetch("http://localhost:7777/logos"); // Get logos and title
+      // Fetch dynamic title and logo
+      const response = await fetch("http://localhost:7777/logos");
       const logoData = await response.json();
 
-      // Assuming the response contains the dynamic title and logo
-      const dynamicTitle = logoData[0]?.TitleText || "Default Title"; // Fallback to default title
-      const logo = logoData[0]?.LogoBlob || ""; // Base64-encoded logo
+      // Extract dynamic title and logo
+      const dynamicTitle = logoData.length
+        ? logoData[0]?.TitleText
+        : "Default Title";
+      const leftLogo =
+        logoData.length && logoData[0]?.Logo
+          ? `data:image/png;base64,${logoData[0].Logo}`
+          : "";
 
-      // Static right logo (replace with actual static image path or Base64 string)
+      // Open new print window
+      const printWindow = window.open("", "", "width=800,height=600");
 
-      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        throw new Error("Popup blocked! Please allow pop-ups and try again.");
+      }
 
-      // HTML content with dynamic title and logos (static right logo)
+      // Write HTML content
       printWindow.document.write(`
-      <html>
-        <head>
-          <title>Disaster Details</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { text-align: center; }
-            h2 { text-align: center; }
-            h3 { margin-top: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .header { display: flex; justify-content: space-between; align-items: center; }
-            .header img { width: 100px; height: auto; }
-            .header div { text-align: center; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <img src="data:image/png;base64,${logo}" alt="Logo" />  <!-- Dynamic logo -->
-            <div>
-              <h2>${dynamicTitle}</h2>  <!-- Dynamic title -->
-              <h2>Disaster Details</h2>
+        <html>
+          <head>
+            <title>Disaster Details</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              h1, h2 { text-align: center; }
+              h3 { margin-top: 20px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .header { display: flex; justify-content: space-between; align-items: center; }
+              .header img { width: 100px; height: auto; }
+              .header div { text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              ${leftLogo ? `<img src="${leftLogo}" alt="Left Logo" />` : ""}
+              <div>
+                <h2>${dynamicTitle}</h2>
+                <h2>Disaster Details</h2>
+              </div>
+              ${rightLogo ? `<img src="${rightLogo}" alt="Right Logo" />` : ""}
             </div>
-            <img src="${rightLogo}" alt="Right Logo" />  <!-- Static right logo -->
-          </div>
-          <h2>${selectedDisaster.disasterType} on ${formatDate(
+  
+            <h2>${selectedDisaster.disasterType} on ${formatDate(
         selectedDisaster.disasterDate
       )}</h2>
-          <p>Total Affected Families: ${
-            selectedDisaster.affectedFamilies.length
-          }</p>
-          <p>Total Male Members: ${selectedDisaster.totalMaleMembers}</p>
-          <p>Total Female Members: ${selectedDisaster.totalFemaleMembers}</p>
-          <h3>Summary</h3>
-          <table>
-            <tr>
-              <th>Category</th>
-              <th>Males</th>
-              <th>Females</th>
-            </tr>
-            ${Object.entries(selectedDisaster.summary)
-              .map(
-                ([key, value]) => `
-            <tr>
-              <td>${key}</td>
-              <td>${value.males}</td>
-              <td>${value.females}</td>
-            </tr>`
-              )
-              .join("")}
-          </table>
-          <h3>Affected Families</h3>
-          ${selectedDisaster.affectedFamilies
-            .map(
-              (family) => `
-            <h4>Family ID ${family.familyId}</h4>
+            <p>Total Affected Families: ${
+              selectedDisaster.affectedFamilies.length
+            }</p>
+            <p>Total Male Members: ${selectedDisaster.totalMaleMembers}</p>
+            <p>Total Female Members: ${selectedDisaster.totalFemaleMembers}</p>
+  
+            <h3>Summary</h3>
             <table>
-              <tr>
-                <th>Representative</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Birth Date</th>
-                <th>Status</th>
-                <th>Phone</th>
-                <th>Purok</th>
-                <th>Residency Type</th>
-              </tr>
-              <tr>
-                <td>${family.representative}</td>
-                <td>${family.age}</td>
-                <td>${family.gender}</td>
-                <td>${new Intl.DateTimeFormat("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                }).format(new Date(family.birthDate))}</td>
-                <td>${family.status}</td>
-                <td>${family.phone}</td>
-                <td>${family.purok || "N/A"}</td>
-                <td>${family.residencyType} ${
-                family.residencyType === "Boarder"
-                  ? `(${family.ownerName})`
-                  : ""
-              }</td>
-              </tr>
-              <tr><td colspan="7"><strong>Members:</strong></td></tr>
-              ${family.members
+              <tr><th>Category</th><th>Males</th><th>Females</th></tr>
+              ${Object.entries(selectedDisaster.summary)
                 .map(
-                  (member) => `
+                  ([key, value]) =>
+                    `<tr><td>${key}</td><td>${value.males}</td><td>${value.females}</td></tr>`
+                )
+                .join("")}
+            </table>
+  
+            <h3>Affected Families</h3>
+            ${selectedDisaster.affectedFamilies
+              .map(
+                (family) => `
+              <h4>Family ID ${family.familyId}</h4>
+              <table>
                 <tr>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th>Birth Date</th>
-                  <th>Status</th>
-                  <th>Phone</th>
+                  <th>Representative</th><th>Age</th><th>Gender</th><th>Birth Date</th>
+                  <th>Status</th><th>Phone</th><th>Purok</th><th>Residency Type</th>
                 </tr>
                 <tr>
-                  <td>${member.name}</td>
-                  <td>${member.age}</td>
-                  <td>${member.gender}</td>
+                  <td>${family.representative}</td>
+                  <td>${family.age}</td>
+                  <td>${family.gender}</td>
                   <td>${new Intl.DateTimeFormat("en-US", {
                     month: "long",
                     day: "numeric",
                     year: "numeric",
-                  }).format(new Date(member.birthDate))}</td>
-                  <td>${member.status}</td>
-                  <td>${member.phone}</td>
-                </tr>`
-                )
-                .join("")}
-            </table>`
-            )
-            .join("")}
-        </body>
-      </html>
+                  }).format(new Date(family.birthDate))}</td>
+                  <td>${family.status}</td>
+                  <td>${family.phone}</td>
+                  <td>${family.purok || "N/A"}</td>
+                  <td>${family.residencyType} ${
+                  family.residencyType === "Boarder"
+                    ? `(${family.ownerName})`
+                    : ""
+                }</td>
+                </tr>
+                <tr><td colspan="7"><strong>Members:</strong></td></tr>
+                ${family.members
+                  .map(
+                    (member) => `
+                  <tr>
+                    <th>Name</th><th>Age</th><th>Gender</th><th>Birth Date</th><th>Status</th><th>Phone</th>
+                  </tr>
+                  <tr>
+                    <td>${member.name}</td>
+                    <td>${member.age}</td>
+                    <td>${member.gender}</td>
+                    <td>${new Intl.DateTimeFormat("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    }).format(new Date(member.birthDate))}</td>
+                    <td>${member.status}</td>
+                    <td>${member.phone}</td>
+                  </tr>
+                `
+                  )
+                  .join("")}
+              </table>
+            `
+              )
+              .join("")}
+          </body>
+        </html>
       `);
+
+      printWindow.document.close();
 
       // Wait for images to load before printing
       const images = printWindow.document.querySelectorAll("img");
-      let loadedImagesCount = 0;
-      images.forEach((img) => {
-        img.onload = () => {
-          loadedImagesCount += 1;
-          if (loadedImagesCount === images.length) {
-            // Trigger print when all images are loaded
-            printWindow.document.close();
-            printWindow.print();
-          }
-        };
-      });
+      if (images.length === 0) {
+        printWindow.print();
+      } else {
+        let loadedImagesCount = 0;
+        images.forEach((img) => {
+          img.onload = img.onerror = () => {
+            loadedImagesCount += 1;
+            if (loadedImagesCount === images.length) {
+              printWindow.print();
+            }
+          };
+        });
+      }
     } catch (error) {
-      console.error("Error logging print activity:", error);
+      console.error("Error generating report:", error);
       toast.error("Error generating report");
     }
   };

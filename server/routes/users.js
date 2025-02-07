@@ -17,7 +17,7 @@ router.post(
     let profile_picture = null;
 
     if (req.file) {
-      profile_picture = req.file.buffer; // Binary data of the uploaded file
+      profile_picture = req.file.buffer.toString("base64"); // Convert binary data to Base64 string
     }
 
     try {
@@ -70,7 +70,7 @@ router.put(
     if (password) updates.password = password;
     if (name) updates.name = name;
     if (role) updates.role = role;
-    if (req.file) updates.profile_picture = req.file.buffer;
+    if (req.file) updates.profile_picture = req.file.buffer.toString("base64"); // Convert to Base64
 
     const setClause = Object.keys(updates)
       .map((key) => `${key} = ?`)
@@ -134,19 +134,15 @@ router.get(
       }
 
       const user = rows[0];
-      // Convert profile_picture (BLOB) to Base64
-      const profilePictureBase64 = user.profile_picture
-        ? user.profile_picture.toString("base64")
-        : null;
-
+      // Send Base64 string of profile_picture if available
       res.status(200).json({
         ...user,
-        profile_picture: profilePictureBase64, // Send Base64 string
+        profile_picture: user.profile_picture ? user.profile_picture : null,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Internal server error" });
-    } 
+    }
   })
 );
 
@@ -173,14 +169,10 @@ router.post(
       }
 
       const user = rows[0];
-      // Convert profile_picture (BLOB) to Base64
-      const profilePictureBase64 = user.profile_picture
-        ? user.profile_picture.toString("base64")
-        : null;
-
+      // Send Base64 string of profile_picture if available
       res.status(200).json({
         ...user,
-        profile_picture: profilePictureBase64, // Include Base64 string
+        profile_picture: user.profile_picture ? user.profile_picture : null,
       });
     } catch (error) {
       console.error("Error logging in user:", error);

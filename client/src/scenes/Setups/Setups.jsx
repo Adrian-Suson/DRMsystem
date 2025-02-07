@@ -8,47 +8,67 @@ import {
   Card,
   CardMedia,
   CardContent,
+  Grid,
 } from "@mui/material";
 
 function Setups() {
-  const [logoFile, setLogoFile] = useState(null); // New logo file
-  const [newLogoPreview, setNewLogoPreview] = useState(null); // Preview for new logo
+  const [logoFile, setLogoFile] = useState(null);
+  const [backgroundFile, setBackgroundFile] = useState(null);
+  const [newLogoPreview, setNewLogoPreview] = useState(null);
+  const [newBackgroundPreview, setNewBackgroundPreview] = useState(null);
   const [titleText, setTitleText] = useState("");
   const [description, setDescription] = useState("");
-  const [existingLogo, setExistingLogo] = useState(null); // Existing logo from the database
+  const [existingLogo, setExistingLogo] = useState(null);
+  const [existingBackground, setExistingBackground] = useState(null);
 
-  // Fetch existing logo and title on mount
+  // Fetch existing logo, title, and login background on mount
   useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:7777/logos/1"); // Replace 1 with the actual ID
+        const response = await axios.get("http://localhost:7777/logos/1");
         if (response.data) {
           setTitleText(response.data.TitleText);
           setDescription(response.data.Description);
-          setExistingLogo(response.data.LogoBlob); // Base64 string
+          setExistingLogo(response.data.Logo);
+          setExistingBackground(response.data.LoginBackground);
         }
       } catch (error) {
-        console.error("Error fetching logo:", error.message);
+        console.error("Error fetching data:", error.message);
       }
     };
 
-    fetchLogo();
+    fetchData();
   }, []);
 
-  // Handle file input change
+  // Handle file input change for logo
   const handleLogoChange = (event) => {
     const file = event.target.files[0];
     setLogoFile(file);
 
-    // Generate a preview of the uploaded file
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewLogoPreview(reader.result); // Set preview to Base64 string
+        setNewLogoPreview(reader.result);
       };
       reader.readAsDataURL(file);
     } else {
-      setNewLogoPreview(null); // Reset if no file is selected
+      setNewLogoPreview(null);
+    }
+  };
+
+  // Handle file input change for background image
+  const handleBackgroundChange = (event) => {
+    const file = event.target.files[0];
+    setBackgroundFile(file);
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewBackgroundPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setNewBackgroundPreview(null);
     }
   };
 
@@ -58,6 +78,7 @@ function Setups() {
 
     const formData = new FormData();
     if (logoFile) formData.append("logo", logoFile);
+    if (backgroundFile) formData.append("loginBackground", backgroundFile);
     formData.append("titleText", titleText);
     formData.append("description", description);
 
@@ -72,66 +93,106 @@ function Setups() {
         }
       );
 
-      alert("Logo and title updated successfully!");
-      setExistingLogo(response.data.logoBlob); // Update the displayed logo
-      setNewLogoPreview(null); // Clear the new logo preview
-      setLogoFile(null); // Reset the file
+      alert("Logo, background, and title updated successfully!");
+      setExistingLogo(response.data.logo);
+      setExistingBackground(response.data.loginBackground);
+      setNewLogoPreview(null);
+      setNewBackgroundPreview(null);
+      setLogoFile(null);
+      setBackgroundFile(null);
     } catch (error) {
-      console.error("Error updating logo and title:", error.message);
-      alert("Failed to update logo and title.");
+      console.error("Error updating data:", error.message);
+      alert("Failed to update logo, background, or title.");
     }
   };
 
   return (
     <Box
       sx={{
+        height: "90vh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         gap: 4,
-        p: 4,
+        overflowY: "auto", // Make the page scrollable when needed
+        padding: 4,
+        bgcolor: "#F4F6F8", // Light background
       }}
     >
-      <Typography variant="h4" component="h1" gutterBottom>
-        Edit Logo and Title
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{ fontWeight: "bold", mb: 2 }}
+      >
+        Edit Logo, Background & Title
       </Typography>
 
-      {/* Display Current Logo */}
-      {!newLogoPreview &&
-        existingLogo && ( // Hide current logo when new logo preview exists
-          <Card sx={{ maxWidth: 300 }}>
+      {/* Grid Layout for Previews */}
+      <Grid container spacing={3} justifyContent="center">
+        {/* Current or New Logo */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              maxWidth: 320,
+              textAlign: "center",
+              boxShadow: 3,
+              borderRadius: "10px",
+              transition: "0.3s",
+              "&:hover": { transform: "scale(1.02)" },
+            }}
+          >
             <CardMedia
               component="img"
               height="200"
-              image={`data:image/png;base64,${existingLogo}`}
-              alt="Current Logo"
+              image={
+                newLogoPreview ||
+                (existingLogo ? `data:image/png;base64,${existingLogo}` : "")
+              }
+              alt="Logo"
             />
             <CardContent>
-              <Typography variant="h6" align="center">
-                Current Logo
+              <Typography variant="h6">
+                {newLogoPreview ? "New Logo Preview" : "Current Logo"}
               </Typography>
             </CardContent>
           </Card>
-        )}
+        </Grid>
 
-      {/* Display New Logo Preview */}
-      {newLogoPreview && (
-        <Card sx={{ maxWidth: 300 }}>
-          <CardMedia
-            component="img"
-            height="200"
-            image={newLogoPreview}
-            alt="New Logo Preview"
-          />
-          <CardContent>
-            <Typography variant="h6" align="center">
-              New Logo Preview
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
+        {/* Current or New Background */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              maxWidth: 400,
+              textAlign: "center",
+              boxShadow: 3,
+              borderRadius: "10px",
+              transition: "0.3s",
+              "&:hover": { transform: "scale(1.02)" },
+            }}
+          >
+            <CardMedia
+              component="img"
+              height="200"
+              image={
+                newBackgroundPreview ||
+                (existingBackground
+                  ? `data:image/png;base64,${existingBackground}`
+                  : "")
+              }
+              alt="Background"
+            />
+            <CardContent>
+              <Typography variant="h6">
+                {newBackgroundPreview
+                  ? "New Background Preview"
+                  : "Current Background"}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Form for Editing Title and Uploading New Logo */}
+      {/* Form Section */}
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -140,7 +201,11 @@ function Setups() {
           flexDirection: "column",
           gap: 3,
           width: "100%",
-          maxWidth: 400,
+          maxWidth: 500,
+          bgcolor: "white",
+          padding: 4,
+          borderRadius: "12px",
+          boxShadow: 4,
         }}
       >
         <TextField
@@ -152,11 +217,26 @@ function Setups() {
           required
         />
 
+        <TextField
+          label="Description"
+          variant="outlined"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          fullWidth
+          multiline
+          rows={3}
+        />
+
         <Button
           variant="contained"
           component="label"
           fullWidth
-          sx={{ textTransform: "none" }}
+          sx={{
+            backgroundColor: "#007BFF",
+            color: "white",
+            "&:hover": { backgroundColor: "#0056b3" },
+            borderRadius: "8px",
+          }}
         >
           Upload New Logo
           <input
@@ -168,10 +248,30 @@ function Setups() {
         </Button>
 
         <Button
+          variant="contained"
+          component="label"
+          fullWidth
+          sx={{
+            backgroundColor: "#28A745",
+            color: "white",
+            "&:hover": { backgroundColor: "#1E7E34" },
+            borderRadius: "8px",
+          }}
+        >
+          Upload New Background
+          <input
+            type="file"
+            hidden
+            accept="image/*"
+            onChange={handleBackgroundChange}
+          />
+        </Button>
+
+        <Button
           type="submit"
           variant="contained"
           color="primary"
-          sx={{ textTransform: "none" }}
+          sx={{ textTransform: "none", borderRadius: "8px", fontSize: "1rem" }}
         >
           Save Changes
         </Button>
