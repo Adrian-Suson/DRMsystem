@@ -5,10 +5,10 @@ dotenv.config();
 
 // Create a MySQL pool with promise support
 const db = mysql.createPool({
-  host: process.env.HOST,
-  user: process.env.USER,
-  password: process.env.PASSWORD,
-  database: process.env.DATABASE,
+  host: process.env.HOST || 'localhost',
+  user: process.env.USER || 'root',
+  password: process.env.PASSWORD || '',
+  database: process.env.DATABASE || 'drms_database', 
 }).promise();
 
 // Function to auto-create an admin account if it does not exist
